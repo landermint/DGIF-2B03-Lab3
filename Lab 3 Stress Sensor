@@ -1,0 +1,55 @@
+#include <Servo.h> 
+
+const int sensorPin = A0;    // pin that the sensor is attached to
+
+int sensorValue = 0;         // the sensor value
+int sensorMin = 1023;        // minimum sensor value
+int sensorMax = 0;           // maximum sensor value
+int counter = 0;
+
+Servo myservo;
+
+
+void setup() {
+  // turn on LED to signal the start of the calibration period:
+  Serial.begin(9600);
+  myservo.attach(9);
+  myservo.write(0); //send servo to one far end
+  pinMode(13, OUTPUT);
+  
+  digitalWrite(13, HIGH); // when LED pin 13 is on, the program is calibrating
+  Serial.println("Grip mouse Hard now"); // the user must grip the mouse as hard as they can at the beginning of the application to calibrate
+
+  // calibrate force sensor for varying hand strengths
+  while (millis() < 5000) {
+    sensorValue = analogRead(sensorPin);
+    //calibrate the system
+    // record the maximum sensor value
+    if (sensorValue > sensorMax) {
+      sensorMax = sensorValue;
+    }
+
+    // record the minimum sensor value
+    if (sensorValue < sensorMin) {
+      sensorMin = sensorValue;
+    }
+  }
+
+  digitalWrite(13, LOW); // when LED pin 13 is off, it has finished calibrating
+}
+
+void loop() {
+  sensorValue = analogRead(sensorPin);
+
+  sensorValue = map(sensorValue, sensorMin, sensorMax, 0, 100); //for convenience, put the value between 0 and 100
+
+  sensorValue = constrain(sensorValue, 0, 100);
+  
+  if (sensorValue > 60){ //when the person begins to grip too hard, add to the counter
+    counter++;
+  }
+  if (counter > 1200000){ // 1200000ms = 20 minutes
+    myservo.write(180); // if the person has been gripping the mouse hard for 20 minutes, close the laptop
+  }
+   delay(1); //1 ms delay
+}
